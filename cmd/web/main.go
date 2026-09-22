@@ -54,24 +54,10 @@ func main() {
 		snippets: &models.SnippetModel{DB: db},
 		templateCache: templateCache,}
 
-	mux := http.NewServeMux()
-
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
-
-	// mux.Handle("/", http.HandlerFunc(home))
-	// mux.Handle("/snippet/view", http.HandlerFunc(snippetView))
-	// mux.Handle("/snippet/create", http.HandlerFunc(snippetCreate))
-
-	mux.HandleFunc("/", a.home)
-	mux.HandleFunc("/snippet/view", a.snippetView)
-	mux.HandleFunc("/snippet/create", a.snippetCreate)	
-
-	
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: a.errLog,
-		Handler:  mux,
+		Handler:  a.routes(),
 	}
 
 	a.infoLog.Println("Server starting on", *addr)	
