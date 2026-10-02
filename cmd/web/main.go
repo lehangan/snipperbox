@@ -8,7 +8,11 @@ import (
 	"os"
 	"snippetbox.alexewards.net/internal/models"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 
+	"github.com/alexedwards/scs/mysqlstore" // New import
+	"github.com/alexedwards/scs/v2"
+	"github.com/go-playground/form/v4"
 	"html/template"
 )
 
@@ -17,6 +21,8 @@ type application struct {
 	errLog  *log.Logger
 	snippets *models.SnippetModel
 	templateCache map[string]*template.Template
+	formDecoder *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func openDB(dsn string) (*sql.DB, error) {
@@ -29,7 +35,6 @@ func openDB(dsn string) (*sql.DB, error) {
 
 func main() {
 	addr := flag.String("addr", ":8080", "HTTP network address")
-
 	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "MySQL data source name")
 
 	flag.Parse()
@@ -44,15 +49,23 @@ func main() {
 
 	defer db.Close()
 
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	templateCache, err := newTemplateCache()
 	if err != nil {
 		errLog.Fatal(err)
 	}
+
 	a := &application{
 		infoLog: infoLog,
 		errLog:  errLog,
 		snippets: &models.SnippetModel{DB: db},
-		templateCache: templateCache,}
+		templateCache: templateCache,
+		formDecoder: form.NewDecoder(),
+		sessionManager: sessionManager,
+	}
 
 	srv := &http.Server{
 		Addr:     *addr,
