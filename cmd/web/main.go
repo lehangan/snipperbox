@@ -70,7 +70,7 @@ func main() {
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: a.errLog,
-		Handler:  a.routes(),
+		Handler:  a.routes()
 	}
 
 	a.infoLog.Println("Server starting on", *addr)	

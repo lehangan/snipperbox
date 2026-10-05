@@ -19,9 +19,9 @@ import (
 // must be exported in order to be read by the html/template package when
 // rendering the template.
 type snippetCreateForm struct {
-	Title       string
-	Content     string
-	Expires     int
+	Title       string `form:"title"`
+	Content     string `form:"content"`
+	Expires     int `form:"expires"`
 	FieldErrors map[string]string
 	validator.Validator `form:"-"` // Embed a validator.Validator type to hold the validation errors for our form fields.
 }
@@ -65,12 +65,12 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	flash := app.sessionManager.PopString(r.Context(), "flash")
+	// flash := app.sessionManager.PopString(r.Context(), "flash")
 
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
 
-	data.Flash = flash
+	// data.Flash = flash
 
 	app.render(w, http.StatusOK, "view.html", data)
 }
@@ -124,7 +124,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		data := app.newTemplateData(r)
 		data.Form = form
 
-		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
+		app.render(w, http.StatusUnprocessableEntity, "create.html", data)
 		return
 	}
 
