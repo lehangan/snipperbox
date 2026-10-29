@@ -6,13 +6,25 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/justinas/nosurf"
 )
+
+func (app *application) isAuthenticated(r *http.Request) bool {
+	value := r.Context().Value(isAuthenticatedContextKey)
+	if value == nil {
+		return false
+	}
+	return value.(bool)
+}
 
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
-		CurrentYear: time.Now().Year(),
-		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
-	}
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+		CRSFToken:       nosurf.Token(r),
+		}
 }
 
 // serverError logs the error message and stack trace, then sends a generic
@@ -20,7 +32,7 @@ func (app *application) newTemplateData(r *http.Request) *templateData {
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 
-	app.errLog.Output(2, trace)
+	app.errorLog.Output(2, trace)
 
 	http.Error(
 		w,

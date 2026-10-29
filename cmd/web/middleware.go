@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"fmt"
+
+	"github.com/justinas/nosurf"
 )
 
 func (app *application) logRequest(next http.Handler) http.Handler {
@@ -62,6 +65,74 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 			}
 		}()
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+
+func (app *application) requireAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// If the user is not authenticated, redirect them to the login page.
+		if !app.isAuthenticated(r) {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+
+		// Prevent authenticated pages from being stored in the browser cache.
+		w.Header().Add("Cache-Control", "no-store")
+
+		// Call the next handler in the chain.
+		next.ServeHTTP(w, r)
+	})
+}
+
+
+func noSurf(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
+
+	// Configure the CSRF cookie.
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true,
+	})
+
+	return csrfHandler
+}
+
+
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Retrieve the authenticated user ID from the session.
+		id := app.sessionManager.GetInt(
+			r.Context(),
+			"authenticatedUserID",
+		)
+
+		// If no user ID exists, continue to the next handler.
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Check whether the user exists in the database.
+		exists, err := app.users.Exists(id)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		// If the user exists, mark the request as authenticated.
+		if exists {
+			ctx := context.WithValue(
+				r.Context(),
+				isAuthenticatedContextKey,
+				true,
+			)
+			r = r.WithContext(ctx)
+		}
+
+		// Call the next handler in the chain.
 		next.ServeHTTP(w, r)
 	})
 }

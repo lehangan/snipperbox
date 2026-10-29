@@ -1,6 +1,6 @@
 module snippetbox.alexewards.net
 
-go 1.26
+go 1.26.0
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
@@ -10,4 +10,6 @@ require (
 	github.com/go-sql-driver/mysql v1.10.1 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/justinas/alice v1.2.0 // indirect
+	github.com/justinas/nosurf v1.2.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 )
